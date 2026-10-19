@@ -1,0 +1,171 @@
+<Window x:Class="AudioHaus.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="AudioHaus — Application audio router" Width="1280" Height="860" MinWidth="1024" MinHeight="700"
+        Background="{StaticResource CanvasBrush}" Foreground="{StaticResource TextBrush}" FontFamily="Segoe UI"
+        WindowStartupLocation="CenterScreen" Loaded="Window_Loaded" Closing="Window_Closing" PreviewKeyDown="Window_PreviewKeyDown"
+        AutomationProperties.AutomationId="AudioHausWindow">
+    <Window.Resources>
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource PanelBrush}" />
+            <Setter Property="BorderBrush" Value="{Binding ConnectionBrush}" />
+            <Setter Property="BorderThickness" Value="2" /><Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="17" /><Setter Property="Margin" Value="2,2,9,13" />
+            <Style.Triggers><DataTrigger Binding="{Binding IsSelected}" Value="True"><Setter Property="Background" Value="#283138" /></DataTrigger></Style.Triggers>
+        </Style>
+        <DataTemplate x:Key="Badges">
+            <Border BorderBrush="{Binding Color}" BorderThickness="1" CornerRadius="4" Padding="7,4" Margin="0,0,6,5">
+                <TextBlock Text="{Binding Name}" FontSize="10" Foreground="{Binding Color}" TextWrapping="Wrap" />
+            </Border>
+        </DataTemplate>
+        <DataTemplate x:Key="MasterControls">
+            <StackPanel>
+                <Grid Margin="0,14,0,10" IsEnabled="{Binding IsManaged}">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="47" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <Slider Minimum="0" Maximum="100" Value="{Binding VolumePercent}" SmallChange="1" LargeChange="10"
+                            AutomationProperties.AutomationId="{Binding AutomationKey, StringFormat=Volume_{0}}" AutomationProperties.Name="Volume" />
+                    <TextBlock Grid.Column="1" Text="{Binding VolumePercent, StringFormat={}{0:0}%}" FontSize="11" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                    <ToggleButton Grid.Column="2" Content="Mute" Style="{StaticResource MuteToggle}" IsChecked="{Binding Muted}"
+                                  AutomationProperties.AutomationId="{Binding AutomationKey, StringFormat=Mute_{0}}" AutomationProperties.Name="Mute routed audio" />
+                </Grid>
+                <ProgressBar Maximum="100" Value="{Binding Level, Mode=OneWay}" AutomationProperties.AutomationId="{Binding AutomationKey, StringFormat=Meter_{0}}" AutomationProperties.Name="AudioHaus signal level" />
+                <TextBlock Text="{Binding LevelText}" Style="{StaticResource Caption}" FontSize="10" Margin="0,5,0,10" />
+                <ItemsControl ItemsSource="{Binding Badges}" ItemTemplate="{StaticResource Badges}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                </ItemsControl>
+                <TextBlock Text="{Binding ErrorText}" Foreground="{StaticResource ErrorBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,5,0,0"
+                           Visibility="{Binding HasError, Converter={StaticResource BooleanVisibility}}" />
+            </StackPanel>
+        </DataTemplate>
+        <Style x:Key="ParkingItem" TargetType="ComboBoxItem" BasedOn="{StaticResource {x:Type ComboBoxItem}}">
+            <Setter Property="AutomationProperties.AutomationId" Value="{Binding Id, StringFormat=Endpoint_{0}}" />
+        </Style>
+    </Window.Resources>
+    <Grid>
+        <Grid x:Name="Workspace" Margin="25,20,25,13">
+            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+            <DockPanel Margin="0,0,0,20">
+                <Button DockPanel.Dock="Right" Content="Settings" Click="Setup_Click" HorizontalAlignment="Right" AutomationProperties.AutomationId="SettingsButton" />
+                <StackPanel><TextBlock Text="AudioHaus" FontSize="27" FontWeight="SemiBold" /><TextBlock Text="Choose where each app is heard." Style="{StaticResource Caption}" Margin="0,4,0,0" /></StackPanel>
+            </DockPanel>
+            <StackPanel Grid.Row="1" Margin="0,0,0,12">
+                <Border Background="#3D2926" BorderBrush="#765047" BorderThickness="1" Padding="12" CornerRadius="7"
+                        Visibility="{Binding HasError, Converter={StaticResource BooleanVisibility}}">
+                    <DockPanel><Button DockPanel.Dock="Right" Content="Dismiss" Command="{Binding DismissErrorCommand}" Style="{StaticResource QuietButton}" AutomationProperties.AutomationId="DismissErrorButton" />
+                        <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource ErrorBrush}" TextWrapping="Wrap" AutomationProperties.AutomationId="ErrorText" /></DockPanel>
+                </Border>
+                <TextBlock Text="{Binding DiscoveryMessage}" Foreground="{StaticResource AccentBrush}" TextWrapping="Wrap" FontSize="11" Margin="0,6,0,0" AutomationProperties.AutomationId="DiscoveryText" />
+                <Border x:Name="WindowErrorBanner" Visibility="Collapsed" Background="#3D2926" Padding="12" CornerRadius="7">
+                    <DockPanel><Button DockPanel.Dock="Right" Content="Dismiss" Click="DismissWindowError_Click" Style="{StaticResource QuietButton}" /><TextBlock x:Name="WindowErrorText" Foreground="{StaticResource ErrorBrush}" TextWrapping="Wrap" /></DockPanel>
+                </Border>
+            </StackPanel>
+            <Grid Grid.Row="2">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="160" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                <Grid>
+                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                    <DockPanel Margin="2,0,12,13"><TextBlock DockPanel.Dock="Right" Text="{Binding Outputs.Count}" Foreground="{StaticResource MutedTextBrush}" HorizontalAlignment="Right" /><TextBlock Text="Output devices" FontSize="19" FontWeight="SemiBold" /></DockPanel>
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False" AutomationProperties.AutomationId="OutputsScroll">
+                        <StackPanel>
+                            <TextBlock Text="No connected playback devices." Foreground="{StaticResource MutedTextBrush}" Margin="18" TextWrapping="Wrap">
+                                <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding Outputs.Count}" Value="0"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></TextBlock.Style>
+                            </TextBlock>
+                            <ItemsControl ItemsSource="{Binding Outputs}" AutomationProperties.AutomationId="OutputsList">
+                                <ItemsControl.ItemTemplate><DataTemplate>
+                                    <Border Style="{StaticResource Card}" MouseLeftButtonDown="Card_MouseLeftButtonDown">
+                                        <StackPanel>
+                                            <Button Command="{Binding SelectCommand}" Style="{StaticResource QuietButton}" Padding="0,0,0,6" HorizontalContentAlignment="Stretch"
+                                                    AutomationProperties.AutomationId="{Binding AutomationKey, StringFormat=SelectOutput_{0}}" AutomationProperties.Name="{Binding Name}" AutomationProperties.HelpText="{Binding ConnectionSummary}">
+                                                <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                                    <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,8,0" />
+                                                    <TextBlock Grid.Column="1" Text="Selected" Foreground="{StaticResource AccentBrush}" FontSize="10" Visibility="{Binding IsSelected, Converter={StaticResource BooleanVisibility}}" />
+                                                </Grid>
+                                            </Button>
+                                            <TextBlock Text="{Binding StateText}" Style="{StaticResource Caption}" AutomationProperties.AutomationId="{Binding AutomationKey, StringFormat=OutputState_{0}}" />
+                                            <ContentControl Content="{Binding}" ContentTemplate="{StaticResource MasterControls}" />
+                                            <Expander Header="Details" Foreground="{StaticResource MutedTextBrush}" FontSize="10" Margin="0,6,0,0">
+                                                <StackPanel Margin="0,8,0,0">
+                                                    <TextBlock Text="{Binding Details}" TextWrapping="Wrap" Style="{StaticResource Caption}" />
+                                                    <StackPanel IsEnabled="{Binding IsManaged}" Margin="0,10,0,0">
+                                                        <TextBlock Text="{Binding DelayMilliseconds, StringFormat=Output delay: {0:0} ms}" Style="{StaticResource Caption}" />
+                                                        <Slider Minimum="0" Maximum="2000" TickFrequency="50" IsSnapToTickEnabled="True" Value="{Binding DelayMilliseconds}" AutomationProperties.AutomationId="{Binding AutomationKey, StringFormat=Delay_{0}}" AutomationProperties.Name="Additional output delay" />
+                                                        <CheckBox Content="Correct clock drift" IsChecked="{Binding DriftEnabled}" AutomationProperties.AutomationId="{Binding AutomationKey, StringFormat=Drift_{0}}" />
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </Expander>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate></ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0">
+                    <TextBlock Text="{Binding SelectionText}" TextAlignment="Center" TextWrapping="Wrap" Style="{StaticResource Caption}" Margin="0,0,0,17" AutomationProperties.AutomationId="SelectionText" />
+                    <Button Content="←  Connect" Command="{Binding ConnectCommand}" Style="{StaticResource PrimaryButton}" AutomationProperties.AutomationId="ConnectButton" />
+                    <Button Content="Disconnect" Command="{Binding DisconnectCommand}" Margin="0,9,0,0" AutomationProperties.AutomationId="DisconnectButton" />
+                    <TextBlock Text="One source can feed several outputs." TextAlignment="Center" TextWrapping="Wrap" Style="{StaticResource Caption}" FontSize="10" Margin="0,18,0,0" />
+                </StackPanel>
+                <Grid Grid.Column="2">
+                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                    <DockPanel Margin="2,0,12,13"><TextBlock DockPanel.Dock="Right" Text="{Binding Sources.Count}" Foreground="{StaticResource MutedTextBrush}" HorizontalAlignment="Right" /><TextBlock Text="Active sound sources" FontSize="19" FontWeight="SemiBold" /></DockPanel>
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False" AutomationProperties.AutomationId="SourcesScroll">
+                        <StackPanel>
+                            <TextBlock Text="Start audio in a game, browser, or music app.&#10;Active sources appear here automatically." Foreground="{StaticResource MutedTextBrush}" Margin="18" TextWrapping="Wrap" LineHeight="24">
+                                <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding Sources.Count}" Value="0"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></TextBlock.Style>
+                            </TextBlock>
+                            <ItemsControl ItemsSource="{Binding Sources}" AutomationProperties.AutomationId="SourcesList">
+                                <ItemsControl.ItemTemplate><DataTemplate>
+                                    <Border Style="{StaticResource Card}" MouseLeftButtonDown="Card_MouseLeftButtonDown">
+                                        <StackPanel>
+                                            <Button Command="{Binding SelectCommand}" Style="{StaticResource QuietButton}" Padding="0,0,0,6" HorizontalContentAlignment="Stretch"
+                                                    AutomationProperties.AutomationId="{Binding AutomationKey, StringFormat=SelectSource_{0}}" AutomationProperties.Name="{Binding Name}" AutomationProperties.HelpText="{Binding ConnectionSummary}">
+                                                <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                                    <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                                    <TextBlock Grid.Column="1" Text="Selected" Foreground="{StaticResource AccentBrush}" FontSize="10" Visibility="{Binding IsSelected, Converter={StaticResource BooleanVisibility}}" />
+                                                </Grid>
+                                            </Button>
+                                            <DockPanel><TextBlock Text="{Binding ProcessLabel}" Style="{StaticResource Caption}" /><TextBlock Text="{Binding StateText}" HorizontalAlignment="Right" Style="{StaticResource Caption}" AutomationProperties.AutomationId="{Binding AutomationKey, StringFormat=SourceState_{0}}" /></DockPanel>
+                                            <ContentControl Content="{Binding}" ContentTemplate="{StaticResource MasterControls}" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate></ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Grid>
+            <Expander Grid.Row="3" Header="Connections" IsExpanded="True" Foreground="{StaticResource TextBrush}" Margin="0,12,0,8" AutomationProperties.AutomationId="ConnectionsPanel">
+                <ScrollViewer MaxHeight="140" VerticalScrollBarVisibility="Auto" Margin="0,9,0,0">
+                    <ItemsControl ItemsSource="{Binding Connections}"><ItemsControl.ItemTemplate><DataTemplate>
+                        <Border BorderBrush="{Binding Color}" BorderThickness="3,0,0,0" Background="{StaticResource PanelBrush}" Padding="10,6" Margin="0,0,0,5">
+                            <DockPanel><Button DockPanel.Dock="Right" Content="Disconnect" Command="{Binding DisconnectCommand}" Style="{StaticResource SmallButton}" />
+                                <TextBlock DockPanel.Dock="Right" Text="{Binding StateText}" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="15,0" />
+                                <TextBlock Text="{Binding Label}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" /></DockPanel>
+                        </Border>
+                    </DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+                </ScrollViewer>
+            </Expander>
+            <DockPanel Grid.Row="4"><TextBlock DockPanel.Dock="Right" Text="Updates automatically" Style="{StaticResource Caption}" HorizontalAlignment="Right" />
+                <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource Caption}" TextTrimming="CharacterEllipsis" AutomationProperties.AutomationId="StatusText" /></DockPanel>
+        </Grid>
+        <Border x:Name="SetupOverlay" Visibility="Collapsed" Background="#F2101315" Padding="35" KeyboardNavigation.TabNavigation="Cycle">
+            <Border MaxWidth="740" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" CornerRadius="12" Padding="27">
+                <Grid><Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                    <DockPanel Margin="0,0,0,22"><Button x:Name="CloseSetupButton" DockPanel.Dock="Right" Content="Close" Click="CloseSetup_Click" HorizontalAlignment="Right" AutomationProperties.AutomationId="CloseSettingsButton" /><TextBlock Text="Settings" FontSize="25" FontWeight="SemiBold" /></DockPanel>
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"><StackPanel>
+                        <TextBlock Text="Automatic application routing" FontSize="17" FontWeight="SemiBold" />
+                        <TextBlock Text="Connect moves the app’s original playback to a silent virtual cable, then sends its captured sound to your selected devices. The last disconnect or closing AudioHaus restores its previous Windows output." TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" LineHeight="23" Margin="0,10,0,20" />
+                        <TextBlock Text="Parking cable" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding ParkingName}" Style="{StaticResource Caption}" Margin="0,6,0,12" />
+                        <ComboBox ItemsSource="{Binding ParkingEndpoints}" SelectedItem="{Binding SelectedParkingEndpoint}" DisplayMemberPath="DisplayName" ItemContainerStyle="{StaticResource ParkingItem}" AutomationProperties.AutomationId="ParkingOutputSelector" />
+                        <Button Content="Use selected cable" Command="{Binding ApplyParkingCommand}" HorizontalAlignment="Left" Margin="0,12,0,20" AutomationProperties.AutomationId="ApplyParkingButton" />
+                        <TextBlock Text="Use stereo CABLE Input from VB-CABLE. Keep your normal Windows default on a physical device. In Sound → Recording → CABLE Output → Properties → Listen, leave “Listen to this device” off. Disconnect all routes before changing the cable." TextWrapping="Wrap" LineHeight="23" Foreground="{StaticResource MutedTextBrush}" />
+                        <WrapPanel Margin="0,18,0,22"><Button Content="Open Sound control panel" Click="SoundPanel_Click" Margin="0,0,10,10" /><Button Content="Open Windows Volume mixer" Click="VolumeMixer_Click" Margin="0,0,0,10" /></WrapPanel>
+                        <TextBlock Text="Volume and compatibility" FontSize="17" FontWeight="SemiBold" />
+                        <TextBlock Text="Source controls affect every routed copy. Output controls affect only the AudioHaus mix sent to that device. Windows and hardware volume stay unchanged. A game or app pinned to an explicit output may need playback restarted or may not support automatic switching. Bluetooth devices retain their own latency." TextWrapping="Wrap" LineHeight="23" Foreground="{StaticResource MutedTextBrush}" Margin="0,10,0,0" />
+                    </StackPanel></ScrollViewer>
+                </Grid>
+            </Border>
+        </Border>
+    </Grid>
+</Window>

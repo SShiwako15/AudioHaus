@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <OutputType>Library</OutputType>
+    <Platforms>x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RootNamespace>AudioHaus.Interop</RootNamespace>
+    <AssemblyName>AudioHaus.Interop</AssemblyName>
+    <OutputPath>$(MSBuildThisFileDirectory)..\..\artifacts\bin\$(PlatformTarget)\$(Configuration)\$(MSBuildProjectName)\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AudioHausNativeLibraryPath>$(MSBuildThisFileDirectory)..\..\artifacts\bin\$(PlatformTarget)\$(Configuration)\AudioHaus.Native\AudioHaus.Native.dll</AudioHausNativeLibraryPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="$(AudioHausNativeLibraryPath)">
+      <Link>AudioHaus.Native.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
+  <Target Name="VerifyAudioHausNativeLibrary" BeforeTargets="PrepareForBuild"
+          Condition="'$(DesignTimeBuild)' != 'true'">
+    <Error Condition="!Exists('$(AudioHausNativeLibraryPath)')"
+           Code="AH0001"
+           Text="Native DLL not found at $(AudioHausNativeLibraryPath). Build AudioHaus.sln with Visual Studio MSBuild for $(Configuration)|$(PlatformTarget) first." />
+  </Target>
+</Project>

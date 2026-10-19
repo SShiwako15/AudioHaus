@@ -1,0 +1,12 @@
+# Build output
+/artifacts/
+[Bb]in/
+[Oo]bj/
+
+# Local Visual Studio settings
+.vs/
+*.user
+*.suo
+
+# Generated project documentation
+/docs/AudioHaus.ProjectDocumentation.docx

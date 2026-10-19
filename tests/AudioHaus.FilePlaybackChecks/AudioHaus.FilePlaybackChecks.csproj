@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <Platforms>x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RootNamespace>AudioHaus.FilePlaybackChecks</RootNamespace>
+    <AssemblyName>AudioHaus.FilePlaybackChecks</AssemblyName>
+    <OutputPath>$(MSBuildThisFileDirectory)..\..\artifacts\bin\$(PlatformTarget)\$(Configuration)\$(MSBuildProjectName)\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\AudioHaus.Interop\AudioHaus.Interop.csproj" />
+  </ItemGroup>
+</Project>
