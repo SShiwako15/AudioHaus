@@ -6,9 +6,8 @@ is heard. The C# WPF interface controls the C++ capture/mixing engine.
 
 ## Run
 
-On this development machine, open
-`S:\AudioHaus\artifacts\bin\x64\Release\AudioHaus.App\AudioHaus.App.exe`.
-Keep the other build files beside it. There is currently no installer.
+For an installed release, use the Start Menu or desktop shortcut created by
+the installer described in [Release and prerequisites](Release.md).
 
 To build from Developer PowerShell:
 
