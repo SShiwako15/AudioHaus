@@ -30,9 +30,6 @@ Read [DesktopSetup.md](docs/DesktopSetup.md) for setup and a full listening
 session, and [the desktop UI checks](tests/AudioHaus.DesktopChecks/README.md) for
 repeatable validation through the real window. The console tools remain available
 for diagnostics and earlier milestones.
-See [AutomaticRoutingValidation.md](docs/AutomaticRoutingValidation.md) for the
-current checks. Earlier playback/capture milestones below remain developer
-diagnostics; they do not describe the current desktop workflow.
 
 ## Requirements
 
