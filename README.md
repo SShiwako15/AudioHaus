@@ -6,6 +6,13 @@ to headphones, send one application to several outputs, or mix several apps on
 one device. Application and output volume/mute controls affect the AudioHaus
 mix without changing Windows/device volume.
 
+## Release and demonstration
+
+For the packaged installation workflow and end-user prerequisites, read
+[Release and prerequisites](docs/Release.md). For a short, repeatable
+walkthrough of routing, fan-out, controls, and cleanup, read
+[Short demonstration](docs/Demo.md).
+
 ## Desktop app
 
 Build the solution for Release/x64, then launch:
@@ -15,7 +22,7 @@ msbuild AudioHaus.sln /restore /p:Configuration=Release /p:Platform=x64
 .\artifacts\bin\x64\Release\AudioHaus.App\AudioHaus.App.exe
 ```
 
-Install VB-CABLE first and disable **Listen to this device** on CABLE Output.
+Install VB-CABLE separately first and disable **Listen to this device** on CABLE Output.
 Keep your normal Windows default on a physical output. Start audio in your
 applications, select a source on the right and an output on the left, then click
 **Connect**. Available devices and applications refresh automatically. AudioHaus
